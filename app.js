@@ -1,7 +1,10 @@
 const express = require('express')
-const app = express()
-//ejs
-app.set('view engine', 'ejs')
+var app = express();
+
+//뷰 엔진
+app.set('view engine', 'ejs');
+//app.set('view engine', 'jade');
+
 // req.body
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
@@ -9,12 +12,11 @@ app.use(express.urlencoded({extended:true}))
 const path = require('path');
 
 const { MongoClient } = require('mongodb')
+const mongoose = require('mongoose');
 
-let connectDB = require('./db.js')
+let connectDB = require('./src/controllers/dbController.js')
 let db
 connectDB.then((client)=>{
-  console.log('DB연결성공')
-  db = client.db('everyoneCulture');
 
   //DB연결 성공 시, 서버 띄우기
   app.listen(8800, () =>{
@@ -24,6 +26,15 @@ connectDB.then((client)=>{
   console.log(error)
 })
 
-app.get('/', (req, res) => {
-    res.send('start page')
-})
+const indexRouter = require('./src/routes/indexRouter');
+const statisticsRouter = require('./src/routes/StatisticsRouter');
+const weakRouter = require('./src/routes/weakRouter');
+const alarmRouter = require('./src/routes/alarmRouter');
+
+
+app.use('/', indexRouter);
+app.use('/statistics', statisticsRouter);
+app.use('/weak', weakRouter);
+app.use('/alarm', alarmRouter);
+
+module.exports = app;
