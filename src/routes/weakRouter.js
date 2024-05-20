@@ -16,20 +16,27 @@ dbController.then((client)=>{
 // 2. 취약한 발음 (음절)
 router.get('/weakPron', async function (req, res, next) {
     try {
-        const documents = await collection.find({}).toArray();
-        
+        // 클라이언트에서 user_id를 받음
+        const user_id = req.query.user_id;
+
+        // user_id를 이용하여 해당 user_id에 해당하는 도큐먼트를 조회
+        const document = await collection.findOne({ user_id });
+
+        if (!document) {
+            // 해당 user_id에 해당하는 도큐먼트가 없는 경우
+            return res.status(404).json({ error: '해당 user_id에 해당하는 도큐먼트를 찾을 수 없습니다.' });
+        }
+
         // sum%count가 60 미만인 원소를 저장할 배열 초기화
         let weakPhonemes = [];
 
         // sum%count가 60 미만인 원소를 추출하여 저장
-        documents.forEach(doc => {
-            for (const phoneme in doc.phonemes) {
-                const sumCountRatio = doc.phonemes[phoneme].sum / doc.phonemes[phoneme].count;
-                if (sumCountRatio < 60) {
-                    weakPhonemes.push({ phoneme, sumCountRatio });
-                }
+        for (const phoneme in document.phonemes) {
+            const sumCountRatio = document.phonemes[phoneme].sum / document.phonemes[phoneme].count;
+            if (sumCountRatio < 60) {
+                weakPhonemes.push({ phoneme, sumCountRatio });
             }
-        });
+        }
 
         // weakPhonemes 배열 정렬
         weakPhonemes.sort((a, b) => a.sumCountRatio - b.sumCountRatio);
