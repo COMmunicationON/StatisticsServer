@@ -49,7 +49,7 @@ router.get('/getFeedbackAverage', async (req, res) => {
         const documents = await collection.find({}).toArray();
         
         if (!documents || documents.length === 0) {
-            return res.status(404).json({ error: '사용자의 점수 도큐먼트를 찾을 수 없습니다.' });
+            return res.status(404).json({ error: '사용자의 score 데이터를 찾을 수 없습니다.' });
         }
 
         // 첫 번째 도큐먼트를 선택
@@ -65,53 +65,18 @@ router.get('/getFeedbackAverage', async (req, res) => {
         const wordAvg = calculateAverageScores(wordScores);
         const sentenceAvg = calculateAverageScores(sentenceScores);
 
-        // 결과 구성
         const result = {
             syllable_score: syllableAvg,
             word_score: wordAvg,
             sentence_score: sentenceAvg
         };
 
-        // 결과 반환
         res.status(200).json(result);
     } catch (error) {
-        // 오류 처리
         console.error('Error:', error);
-        res.status(500).json({ error: '서버에서 오류가 발생했습니다.' });
+        res.status(500).json({ error: '서버 내부 오류가 발생했습니다.' });
     }
 });
-
-// 4. 총 맞춘 문제 갯수
-router.get('/getTotalCount', async function (req, res, next) {
-    try {
-        const client = await dbController;
-        console.log('StatisticsRouter.js => DB연결성공');
-        const db = client.db('comon');
-        const collection = db.collection('score');
-
-        // 문서 가져오기
-        const documents = await collection.find({}).toArray();
-
-         // 첫 번째 도큐먼트를 선택
-         const document = documents[0];
-
-        if (!document) {
-            return res.status(404).json({ error: '사용자의 점수 도큐먼트를 찾을 수 없습니다.' });
-        }
-
-        // total count 계산
-        const totalCount = Object.values(document.sum).reduce((total, value) => total + value, 0) / Object.values(document.count).reduce((total, value) => total + value, 0);
-
-        // total problem number 계산
-        const totalProblemNum = Object.values(document.count).reduce((total, value) => total + value, 0) * 10;
-
-        res.json({ totalCount, totalProblemNum });
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ error: '서버에서 오류가 발생했습니다.' });
-    }
-});
-
 
 // 점수들의 평균을 계산하는 함수
 function calculateAverageScores(scores) {
@@ -136,6 +101,40 @@ function calculateAverageScores(scores) {
         pron_avg: pronAvg.toFixed(1)
     };
 }
+
+// 4. 총 맞춘 문제 갯수
+router.get('/getTotalCount', async function (req, res, next) {
+    try {
+        const client = await dbController;
+        console.log('StatisticsRouter.js => DB연결성공');
+        const db = client.db('comon');
+        const collection = db.collection('score');
+
+        // 문서 가져오기
+        const documents = await collection.find({}).toArray();
+
+         // 첫 번째 도큐먼트를 선택
+         const document = documents[0];
+
+        if (!document) {
+            return res.status(404).json({ error: '사용자의 점수 도큐먼트를 찾을 수 없습니다.' });
+        }
+
+        // total count 계산 (소수점 이하 제거)
+        const totalCount = Math.floor(Object.values(document.sum).reduce((total, value) => total + value, 0) / Object.values(document.count).reduce((total, value) => total + value, 0));
+
+        // total problem number 계산
+        const totalProblemNum = Object.values(document.count).reduce((total, value) => total + value, 0) * 10;
+
+        res.json({ totalCount, totalProblemNum });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: '서버에서 오류가 발생했습니다.' });
+    }
+});
+
+
+
 // 배열의 평균을 계산하는 함수
 function calculateAverage(scores) {
     if (scores.length === 0) return 0;

@@ -18,8 +18,12 @@ let connectDB = require('./src/controllers/dbController.js')
 let db
 
 
-app.listen(3000, '0.0.0.0', () =>{
-  console.log('서버가 80번 포트에서 실행되었습니다.');
+// app.listen(3000, '0.0.0.0', () =>{
+//   console.log('서버가 80번 포트에서 실행되었습니다.');
+// })
+
+app.listen(8800, () =>{
+  console.log('서버가 8800번 포트에서 실행되었습니다.');
 })
 
 const indexRouter = require('./src/routes/indexRouter');
