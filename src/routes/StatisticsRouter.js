@@ -126,7 +126,10 @@ router.get('/getTotalCount', async function (req, res, next) {
         // total problem number 계산
         const totalProblemNum = Object.values(document.count).reduce((total, value) => total + value, 0) * 10;
 
-        res.json({ totalCount, totalProblemNum });
+        // percentage 계산
+        const percentage = Math.floor(totalProblemNum / totalCount);
+
+        res.json({ totalCount, totalProblemNum, percentage });
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ error: '서버에서 오류가 발생했습니다.' });
