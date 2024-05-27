@@ -30,7 +30,9 @@ router.get('/getPartAverage', async function (req, res, next) {
             };
         });
 
-        res.json(averages);
+        // res.json(averages);
+
+        res.json(averages[0]); // 첫 번째 요소만 반환
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Internal server error" });
@@ -126,9 +128,10 @@ router.get('/getTotalCount', async function (req, res, next) {
         // total problem number 계산
         const totalProblemNum = Object.values(document.count).reduce((total, value) => total + value, 0) * 10;
 
-        // percentage 계산
-        const percentage = Math.floor(totalProblemNum / totalCount);
-
+        // percentage 계산 (수정된 부분)
+        let percentage = (totalCount / totalProblemNum) * 100; // percentage 계산
+        percentage = Math.round(percentage * 10) / 10; // 소수점 첫째 자리까지 반올림
+        
         res.json({ totalCount, totalProblemNum, percentage });
     } catch (error) {
         console.error('Error:', error);
