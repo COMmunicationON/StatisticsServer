@@ -150,39 +150,77 @@ function calculateAverage(scores) {
 
 module.exports = router;
 
-// 0. 각 파트별 진척도 
-// router.get('/getAccuracy', async (req, res) => {
-    // try {
-    //     const averageScores = {
-    //         음절: 0,
-    //         단어: 0,
-    //         문장: 0
-    //     };
+// 1. 레벨 진척도
+router.get('/getLevelAndProcess', async function (req, res, next) {
+    try {
+        const client = await dbController;
+        console.log('alarmRouter.js => DB연결성공');
+        const db = client.db('comon');
+        const collection = db.collection('score');
 
-    //     // 각 type 별로 accuracy_score의 합계와 개수 구하기
-    //     const feedbacks = await FeedbackModel.find();
+        // 문서 가져오기
+        const documents = await collection.find({}).toArray();
 
-    //     feedbacks.forEach(feedback => {
-    //         feedback.score.forEach(score => {
-    //             if (score.type === '음절') {
-    //                 averageScores.음절 += score.accuracy_score;
-    //             } else if (score.type === '단어') {
-    //                 averageScores.단어 += score.accuracy_score;
-    //             } else if (score.type === '문장') {
-    //                 averageScores.문장 += score.accuracy_score;
-    //             }
-    //         });
-    //     });
+        // 첫 번째 도큐먼트를 선택
+        const document = documents[0];
 
-    //     //평균값 계산
-    //     const totalCount = feedbacks.length;
-    //     averageScores.음절 /= totalCount;
-    //     averageScores.단어 /= totalCount;
-    //     averageScores.문장 /= totalCount;
+        if (!document) {
+            return res.status(404).json({ error: '사용자의 점수 도큐먼트를 찾을 수 없습니다.' });
+        }
 
-    //     res.json(averageScores);
-    // } catch (err) {
-    //     console.error(err);
-    //     res.status(500).json({ message: "Server Error" });
-    // }
-// });
+        // syllable_score, word_score, sentence_score를 합친 배열 생성
+        const allScores = [
+            ...document.syllable_score,
+            ...document.word_score,
+            ...document.sentence_score
+        ];
+
+        // 전체 레벨 비율 계산
+        const calculateOverallLevelProcess = (scores) => {
+            const levelCounts = {};
+            const totalScores = scores.length;
+
+            // 레벨 개수 세기
+            scores.forEach(score => {
+                if (levelCounts[score.level]) {
+                    levelCounts[score.level]++;
+                } else {
+                    levelCounts[score.level] = 1;
+                }
+            });
+
+            // 레벨 비율 계산
+            const levelProcess = {};
+            for (const level in levelCounts) {
+                levelProcess[level] = (levelCounts[level] / totalScores) * 100;
+            }
+
+            return levelProcess;
+        };
+
+        // 전체 레벨 비율 계산
+        const overallLevelProcess = calculateOverallLevelProcess(allScores);
+
+        // 가장 높은 비율을 차지하는 레벨과 그 비율을 찾기
+        let maxLevel = null;
+        let maxProcess = 0;
+        for (const level in overallLevelProcess) {
+            if (overallLevelProcess[level] > maxProcess) {
+                maxProcess = overallLevelProcess[level];
+                maxLevel = level;
+            }
+        }
+
+        // 최종 response 객체 생성
+        const response = {
+            level: maxLevel,
+            process: maxProcess
+        };
+
+        res.json(response);
+
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: '서버에서 오류가 발생했습니다.' });
+    }
+});
